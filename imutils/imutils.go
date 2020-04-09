@@ -1,6 +1,7 @@
 package imutils
 
 import (
+	"fmt"
 	"image"
 	"math"
 	"sort"
@@ -52,12 +53,12 @@ func OrderPoints(pts []image.Point) []image.Point {
 		return pythagoreanDist(leftMost[0], rightMost[0]) <
 			pythagoreanDist(leftMost[0], rightMost[1])
 	})
-	return []image.Point{leftMost[0], rightMost[0], rightMost[1], leftMost[1]}
+	return []image.Point{leftMost[0], rightMost[1], rightMost[0], leftMost[1]}
 }
 
 //FourPointTransform is the golang versioin of the function
 //four_point_transform from the python lib imutils
-func FourPointTransform(img gocv.Mat, pts []image.Point) gocv.Mat {
+func FourPointTransform(img gocv.Mat, pts []image.Point, dst *gocv.Mat) {
 	rect := OrderPoints(pts)
 	tl := rect[0]
 	tr := rect[1]
@@ -76,14 +77,64 @@ func FourPointTransform(img gocv.Mat, pts []image.Point) gocv.Mat {
 		math.Pow(float64(tl.Y)-float64(bl.Y), 2))
 	maxHeight := math.Max(heightA, heightB)
 
-	dst := []image.Point{
+	dt := []image.Point{
 		image.Pt(0, 0),
 		image.Pt(int(maxWidth)-1, 0),
 		image.Pt(int(maxWidth)-1, int(maxHeight)-1),
 		image.Pt(0, int(maxHeight)-1)}
 
-	m := gocv.GetPerspectiveTransform(rect, dst)
-	var returnMat gocv.Mat
-	gocv.WarpPerspective(img, &returnMat, m, image.Pt(int(maxWidth), int(maxHeight)))
-	return returnMat
+	m := gocv.GetPerspectiveTransform(rect, dt)
+	gocv.WarpPerspective(img, dst, m, image.Pt(int(maxWidth), int(maxHeight)))
+
+}
+
+//SortContours is the golang versioin of the function
+//sort_contours from the python lib imutils
+func SortContours(cnts [][]image.Point, method string) [][]image.Point {
+	reverse := false
+	vertical := false
+
+	if method == "right-to-left" || method == "bottom-to-top" {
+		reverse = true
+	}
+
+	if method == "bottom-to-top" || method == "top-to-bottom" {
+		vertical = true
+	}
+
+	var boundingBoxes []image.Rectangle
+	for _, c := range cnts {
+		boundingBoxes = append(boundingBoxes, gocv.BoundingRect(c))
+	}
+	for i := range boundingBoxes {
+		for j := 0; j < i; j++ {
+			if vertical {
+				if !reverse {
+					if boundingBoxes[i].Min.Y < boundingBoxes[j].Min.Y {
+						boundingBoxes[i], boundingBoxes[j] = boundingBoxes[j], boundingBoxes[i]
+						cnts[i], cnts[j] = cnts[j], cnts[i]
+					}
+				} else if reverse {
+					if boundingBoxes[i].Min.Y > boundingBoxes[j].Min.Y {
+						boundingBoxes[i], boundingBoxes[j] = boundingBoxes[j], boundingBoxes[i]
+						cnts[i], cnts[j] = cnts[j], cnts[i]
+					}
+				}
+			} else if !vertical {
+				if !reverse {
+					if boundingBoxes[i].Min.X < boundingBoxes[j].Min.X {
+						boundingBoxes[i], boundingBoxes[j] = boundingBoxes[j], boundingBoxes[i]
+						cnts[i], cnts[j] = cnts[j], cnts[i]
+					}
+				} else if reverse {
+					if boundingBoxes[i].Min.X > boundingBoxes[j].Min.X {
+						boundingBoxes[i], boundingBoxes[j] = boundingBoxes[j], boundingBoxes[i]
+						cnts[i], cnts[j] = cnts[j], cnts[i]
+					}
+				}
+			}
+		}
+	}
+	fmt.Println(boundingBoxes)
+	return cnts
 }
