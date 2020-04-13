@@ -2,12 +2,16 @@ package main
 
 import (
 	"image"
-
 	imutils "./imutils"
 	"gocv.io/x/gocv"
+	"image/color"
+	"fmt"
 )
 
 func main() {
+	answerKey := map[int]int{0: 1, 1: 4, 2: 0, 3: 3, 4: 1}
+	rightColor := color.RGBA{R:0,G:255,B:0,A:0}
+	wrongColor := color.RGBA{R:255,G:0,B:0,A:0}
 	original := gocv.NewWindow("ORIGINAL")
 	exam := gocv.NewWindow("EXAM")
 	bubbleSheet := gocv.IMRead("image.png", 1)
@@ -50,10 +54,37 @@ func main() {
 		}
 	}
 
-	cnts = imutils.SortContours(cnts, "top-to-bottom")
-	questionCnts = cnts[0]
+	imutils.SortContours(cnts, "top-to-bottom")
+	var correct int = 0
+	var answerSheet map[int]int;
+	answerSheet = make(map[int]int)
 
-	original.IMShow(paper)
-	exam.IMShow(warped)
+	for i:=0; i<len(cnts); i+=len(answerKey) {
+		imutils.SortContours(cnts[i:i+5], "left-to-right")
+		bubbleCount := 0 
+		for j:=i; j<i+len(answerKey); j++ {
+			mask:= gocv.NewMatWithSize(thresh.Rows(),thresh.Cols(),thresh.Type())
+			bubble:= gocv.NewMatWithSize(thresh.Rows(),thresh.Cols(),thresh.Type())
+			c := [][]image.Point{cnts[j]}
+			gocv.DrawContours(&mask, c, -1, color.RGBA{R:255,G:255,B:255,A:255}, -1)
+			gocv.BitwiseAndWithMask(thresh,thresh,&bubble,mask)
+			newCount := gocv.CountNonZero(bubble)
+			if(newCount > bubbleCount){
+				bubbleCount = newCount
+				answerSheet[i/5] = j-i
+			}
+		}
+		fmt.Println(answerSheet)
+		c := [][]image.Point{cnts[answerSheet[i/len(answerKey)]+i]}
+		if(answerSheet[i/len(answerKey)]==answerKey[i/len(answerKey)]) { 
+			gocv.DrawContours(&paper, c, 0, rightColor, 2)
+			correct++
+		} else { gocv.DrawContours(&paper, c, 0, wrongColor, 2)}
+	}
+
+	grade := fmt.Sprintf("%.0f%%",float32(correct)/float32(len(answerKey))*100)
+	gocv.PutText(&paper, grade, image.Point{X:10,Y:70},gocv.FontHersheyPlain, 5, wrongColor, 3)
+	original.IMShow(bubbleSheet)
+	exam.IMShow(paper)
 	original.WaitKey(0)
 }

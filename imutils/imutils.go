@@ -1,7 +1,6 @@
 package imutils
 
 import (
-	"fmt"
 	"image"
 	"math"
 	"sort"
@@ -90,7 +89,7 @@ func FourPointTransform(img gocv.Mat, pts []image.Point, dst *gocv.Mat) {
 
 //SortContours is the golang versioin of the function
 //sort_contours from the python lib imutils
-func SortContours(cnts [][]image.Point, method string) [][]image.Point {
+func SortContours(cnts [][]image.Point, method string) ([][]image.Point, []image.Rectangle) {
 	reverse := false
 	vertical := false
 
@@ -135,6 +134,5 @@ func SortContours(cnts [][]image.Point, method string) [][]image.Point {
 			}
 		}
 	}
-	fmt.Println(boundingBoxes)
-	return cnts
+	return cnts, boundingBoxes
 }
