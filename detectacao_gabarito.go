@@ -74,7 +74,6 @@ func main() {
 				answerSheet[i/5] = j-i
 			}
 		}
-		fmt.Println(answerSheet)
 		c := [][]image.Point{cnts[answerSheet[i/len(answerKey)]+i]}
 		if(answerSheet[i/len(answerKey)]==answerKey[i/len(answerKey)]) { 
 			gocv.DrawContours(&paper, c, 0, rightColor, 2)
