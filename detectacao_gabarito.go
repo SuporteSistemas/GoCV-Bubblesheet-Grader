@@ -14,7 +14,7 @@ func main() {
 	wrongColor := color.RGBA{R:255,G:0,B:0,A:0}
 	original := gocv.NewWindow("ORIGINAL")
 	exam := gocv.NewWindow("EXAM")
-	bubbleSheet := gocv.IMRead("image.png", 1)
+	bubbleSheet := gocv.IMRead("ler/test_07.png", 1)
 	gray := gocv.NewMat()
 	blurred := gocv.NewMat()
 	edged := gocv.NewMat()
@@ -34,7 +34,6 @@ func main() {
 			approx := gocv.ApproxPolyDP(c, 0.02*peri, true)
 			if len(approx) == 4 {
 				docCnt = approx
-				break
 			}
 		}
 	}
@@ -48,11 +47,12 @@ func main() {
 		rect := gocv.BoundingRect(c)
 		w := rect.Max.X - rect.Min.X
 		h := rect.Max.Y - rect.Min.Y
-		ar := float32(w / h)
-		if w >= 20 && h >= 20 && ar >= 0.9 && ar <= 1.1 {
+		ar := float32(w) / float32(h)
+		if w >= 20 && h >= 20 && ar >= 0.8 && ar <= 1.2 {
 			cnts = append(cnts, c)
 		}
 	}
+	
 
 	imutils.SortContours(cnts, "top-to-bottom")
 	var correct int = 0
@@ -60,7 +60,7 @@ func main() {
 	answerSheet = make(map[int]int)
 
 	for i:=0; i<len(cnts); i+=len(answerKey) {
-		imutils.SortContours(cnts[i:i+5], "left-to-right")
+		imutils.SortContours(cnts[i:i+len(answerKey)], "left-to-right")
 		bubbleCount := 0 
 		for j:=i; j<i+len(answerKey); j++ {
 			mask:= gocv.NewMatWithSize(thresh.Rows(),thresh.Cols(),thresh.Type())
